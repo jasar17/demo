@@ -191,7 +191,7 @@ class _AddMealScreenState extends State<AddMealScreen> {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    primary: Theme.of(context).brightness == Brightness.light ? Colors.green : Colors.black26,
+                    backgroundColor: Theme.of(context).brightness == Brightness.light ? Colors.green : Colors.black26,
                     minimumSize: const Size(200, 45),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(

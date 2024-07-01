@@ -50,9 +50,7 @@ class _ProfileImagePickerScreenState extends State<ProfileImagePickerScreen> {
                     children: [
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          elevation: 0,
-                          primary: Theme.of(context).brightness == Brightness.light ? Colors.green.shade200 : Colors.white60, // Background color
-                          onPrimary: Colors.white, // Text color
+                          foregroundColor: Colors.white, backgroundColor: Theme.of(context).brightness == Brightness.light ? Colors.green.shade200 : Colors.white60, elevation: 0, // Text color
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), // Button padding
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10), // Button border radius
@@ -67,9 +65,7 @@ class _ProfileImagePickerScreenState extends State<ProfileImagePickerScreen> {
                       ElevatedButton.icon(
 
                         style: ElevatedButton.styleFrom(
-                          elevation: 0,
-                          primary: Theme.of(context).brightness == Brightness.light ? Colors.green.shade200 :  Colors.white60, // Background color
-                          onPrimary: Colors.white, // Text color
+                          foregroundColor: Colors.white, backgroundColor: Theme.of(context).brightness == Brightness.light ? Colors.green.shade200 :  Colors.white60, elevation: 0, // Text color
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), // Button padding
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10), // Button border radius
