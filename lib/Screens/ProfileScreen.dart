@@ -7,6 +7,7 @@ import 'package:meal_tracker_app/Screens/Login_Screen.dart';
 import 'package:meal_tracker_app/Screens/ProfileImagePickerScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
 
@@ -14,7 +15,7 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin {
+class _ProfileScreenState extends State<ProfileScreen> {
   var newPassword = "";
   var editEmail = "";
   var nameValue = "";
@@ -23,19 +24,143 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   final emailController = TextEditingController();
   final newPasswordController = TextEditingController();
 
-  void signOutUser() async{
+  void signOutUser() async {
     FirebaseAuth auth = FirebaseAuth.instance;
     User? currentUser = auth.currentUser;
-    if(currentUser != null){
-      try{
-        await currentUser.delete().then((value) => Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen(),)));
-      }on FirebaseAuthException catch(e){
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
-            e.code,
-            style: const TextStyle(fontSize: 18.0),
-    ),),);
+    if (currentUser != null) {
+      try {
+        await auth.signOut().then((value) =>
+            Navigator.pushReplacement(
+                context, MaterialPageRoute(builder: (context) => const LoginScreen())));
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'requires-recent-login') {
+          reauthenticateUser(currentUser, signOutUser);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+              e.code,
+              style: const TextStyle(fontSize: 18.0),
+            ),
+          ));
+        }
       }
     }
+  }
+
+  void changePassword() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    try {
+      await currentUser!.updatePassword(newPasswordController.text).then((value) {
+        Fluttertoast.showToast(
+          msg: "Password Changed, Please Login",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: MyColors.darkGreen,
+          textColor: Colors.white,
+        );
+        Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const LoginScreen(),
+            ));
+      });
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        reauthenticateUser(currentUser!, changePassword);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            e.code,
+            style: const TextStyle(fontSize: 18.0),
+          ),
+        ));
+      }
+    }
+  }
+
+  void changeEmail() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    try {
+      await currentUser!.updateEmail(emailController.text).then((value) {
+        Fluttertoast.showToast(
+          msg: "Email Changed, Please Login",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: MyColors.darkGreen,
+          textColor: Colors.white,
+        );
+        Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const LoginScreen(),
+            ));
+      });
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        reauthenticateUser(currentUser!, changeEmail);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            e.code,
+            style: const TextStyle(fontSize: 18.0),
+          ),
+        ));
+      }
+    }
+  }
+
+  void reauthenticateUser(User currentUser, Function onSuccess) async {
+    final credential = EmailAuthProvider.credential(
+      email: currentUser.email!,
+      password: await _getPasswordFromUser(),
+    );
+    try {
+      await currentUser.reauthenticateWithCredential(credential);
+      onSuccess();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+          e.toString(),
+          style: const TextStyle(fontSize: 18.0),
+        ),
+      ));
+    }
+  }
+
+  Future<String> _getPasswordFromUser() async {
+    String password = '';
+    await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          final passwordController = TextEditingController();
+          return AlertDialog(
+            title: const Text('Re-authenticate'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Enter your password',
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  password = passwordController.text;
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          );
+        });
+    return password;
   }
 
   @override
@@ -44,64 +169,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     super.initState();
   }
 
-  void changePassword() async{
-    final currentUser = FirebaseAuth.instance.currentUser;
-    try{
-      await currentUser!.updatePassword(newPasswordController.text).then((value) {
-        {
-          Fluttertoast.showToast(
-            msg: "Password Changed,Please Login",
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.BOTTOM,
-            timeInSecForIosWeb: 1,
-            backgroundColor:MyColors.darkGreen,
-            textColor: Colors.white,
-          );
-          Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const LoginScreen(),
-              ));
-        }
-      });
-    }on FirebaseException catch(e){
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
-        e.code,
-        style: const TextStyle(fontSize: 18.0),
-      ),),);
-    }
-
-
-  }
-  void changeEmail() async{
-    final currentUser = FirebaseAuth.instance.currentUser;
-    try{
-      await currentUser!.updateEmail(emailController.text).then((value) {
-        {
-          Fluttertoast.showToast(
-            msg: "Email Changed,Please Login",
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.BOTTOM,
-            timeInSecForIosWeb: 1,
-            backgroundColor:MyColors.darkGreen,
-            textColor: Colors.white,
-          );
-          Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const LoginScreen(),
-              ));
-        }
-      });
-    }on FirebaseException catch(e){
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
-        e.code,
-        style: const TextStyle(fontSize: 18.0),
-      ),),);
-    }
-
-
-  }
   _launchURL() async {
     var url = Uri.parse("https://hypeteq.com/");
     if (await canLaunchUrl(url)) {
@@ -111,7 +178,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     }
   }
 
-  void getValue() async{
+  void getValue() async {
     var prefs = await SharedPreferences.getInstance();
     var getName = prefs.getString('myName');
     setState(() {
@@ -122,7 +189,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).brightness == Brightness.light ? Colors.green.shade50 : Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Theme.of(context).brightness == Brightness.light
+          ? Colors.green.shade50
+          : Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -131,27 +200,39 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 Container(
                   height: 280,
                   decoration: BoxDecoration(
-                      color: Theme.of(context).brightness == Brightness.light ? Colors.green.shade300 : Colors.black45,
-                      borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(30),bottomRight: Radius.circular(30))
-                  ),
+                      color: Theme.of(context).brightness == Brightness.light
+                          ? Colors.green.shade300
+                          : Colors.black45,
+                      borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(30),
+                          bottomRight: Radius.circular(30))),
                 ),
                 Column(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10,vertical: 30),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 30),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Row(
                             children: [
-                              IconButton(onPressed: (){
-                                Navigator.pop(context);
-                              }, icon: const Icon(Icons.arrow_back_ios_new,color: Colors.white,size: 20,)),
-                              const Text("Profile",style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold
-                              ),),
+                              IconButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  icon: const Icon(
+                                    Icons.arrow_back_ios_new,
+                                    color: Colors.white,
+                                    size: 20,
+                                  )),
+                              const Text(
+                                "Profile",
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold),
+                              ),
                             ],
                           ),
                         ],
@@ -159,32 +240,43 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     ),
                     const ProfileImagePickerScreen(),
                     const SizedBox(height: 5),
-                    Text(nameValue,style: TextStyle(color: Theme.of(context).brightness == Brightness.light ? Colors.black : Colors.white,fontSize: 16,fontWeight: FontWeight.bold),),
+                    Text(
+                      nameValue,
+                      style: TextStyle(
+                          color: Theme.of(context).brightness == Brightness.light
+                              ? Colors.black
+                              : Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 5),
                   ],
                 )
-              ]
+              ],
             ),
             const SizedBox(height: 20),
             Column(
               children: [
                 InkWell(
-                  onTap: (){
-                    editEmailDialog(email: FirebaseAuth.instance.currentUser!.email.toString());
-                  },
+                    onTap: () {
+                      editEmailDialog(
+                          email:
+                          FirebaseAuth.instance.currentUser!.email.toString());
+                    },
                     child: drawerText("Change Email", Icons.lock_open_outlined)),
-                  InkWell(
-                    onTap: (){
+                InkWell(
+                    onTap: () {
                       editPasswordDialog();
                     },
-                      child: drawerText("Change Password", Icons.change_circle_outlined)),
+                    child:
+                    drawerText("Change Password", Icons.change_circle_outlined)),
                 InkWell(
-                  onTap: (){
-                    infoDialogBox();
-                  },
+                    onTap: () {
+                      infoDialogBox();
+                    },
                     child: drawerText("Information", Icons.perm_device_information)),
                 InkWell(
-                  onTap: () => signOutUser(),
+                    onTap: () => signOutUser(),
                     child: drawerText("Sign Out", Icons.logout_rounded)),
               ],
             )
@@ -193,7 +285,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       ),
     );
   }
-  Widget drawerText(String name,IconData icons) {
+
+  Widget drawerText(String name, IconData icons) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Card(
@@ -206,46 +299,54 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           children: [
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Stack(
-                  children: [
-                    Container(
-                      height: 50,
-                      width: 50,
-                      decoration:
-                      BoxDecoration(
-                        color: Colors.grey.withOpacity(0.4),
-                        borderRadius: BorderRadius.circular(20), //<-- SEE HERE
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 13,vertical: 12),
-                      child: Icon(icons,color: Theme.of(context).brightness == Brightness.light ? MyColors.darkGreen : Colors.white60,),
-                    )
-                  ]
-              ),
+              child: Stack(children: [
+                Container(
+                  height: 50,
+                  width: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(20), //<-- SEE HERE
+                  ),
+                ),
+                Padding(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+                  child: Icon(
+                    icons,
+                    color: Theme.of(context).brightness == Brightness.light
+                        ? MyColors.darkGreen
+                        : Colors.white60,
+                  ),
+                )
+              ]),
             ),
-            Text(name,style: const TextStyle(fontWeight: FontWeight.w500),)
-
+            Text(
+              name,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            )
           ],
         ),
       ),
     );
-
   }
 
-  infoDialogBox(){
+  infoDialogBox() {
     return showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            backgroundColor: Theme.of(context).brightness == Brightness.light ? Colors.green.shade50: Colors.black,
+            backgroundColor: Theme.of(context).brightness == Brightness.light
+                ? Colors.green.shade50
+                : Colors.black,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
             title: Text("Infomation",
                 style: GoogleFonts.muktaMahee(
                   textStyle: TextStyle(
-                      color: Theme.of(context).brightness == Brightness.light ? MyColors.darkGreen: Colors.white,
+                      color: Theme.of(context).brightness == Brightness.light
+                          ? MyColors.darkGreen
+                          : Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.bold),
                 )),
@@ -254,24 +355,53 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               children: [
                 Row(
                   children: [
-                    ClipOval(child: Image.asset("assets/hypeteq.jfif",height: 60,width: 70,)),
-                    const SizedBox(width: 10,),
-                    Flexible(child: Text("Hypeteq software solutions pvt. ltd",style:GoogleFonts.mukta(textStyle: TextStyle(fontWeight: FontWeight.bold,
-                      color: Theme.of(context).brightness == Brightness.light ? MyColors.darkGreen: Colors.white,
-                    )) ))
+                    ClipOval(
+                        child: Image.asset(
+                          "assets/hypeteq.jfif",
+                          height: 60,
+                          width: 70,
+                        )),
+                    const SizedBox(
+                      width: 10,
+                    ),
+                    Flexible(
+                        child: Text(
+                            "Hypeteq software solutions pvt. ltd",
+                            style: GoogleFonts.mukta(
+                                textStyle: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).brightness == Brightness.light
+                                      ? MyColors.darkGreen
+                                      : Colors.white,
+                                ))))
                   ],
-                ) ,
-                const SizedBox(height: 10,),
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
                 Center(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text("Visit: ",style: TextStyle(fontWeight: FontWeight.bold,color: Theme.of(context).brightness == Brightness.light ? MyColors.darkGreen: Colors.white,)),
+                      Text(
+                        "Visit: ",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).brightness == Brightness.light
+                                ? MyColors.darkGreen
+                                : Colors.white),
+                      ),
                       InkWell(
-                        onTap: (){
-                          _launchURL();
-                        },
-                          child: const Text("hypeteq.com",style: TextStyle(color: Colors.blueAccent,decoration: TextDecoration.underline,fontWeight: FontWeight.bold),)),
+                          onTap: () {
+                            _launchURL();
+                          },
+                          child: const Text(
+                            "hypeteq.com",
+                            style: TextStyle(
+                                color: Colors.blueAccent,
+                                decoration: TextDecoration.underline,
+                                fontWeight: FontWeight.bold),
+                          )),
                     ],
                   ),
                 )
@@ -281,19 +411,20 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         });
   }
 
-  editEmailDialog({required String email}){
+  editEmailDialog({required String email}) {
     editEmail = emailController.text;
     return showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30)
-            ),
+                borderRadius: BorderRadius.circular(30)),
             title: Text("Edit Data",
                 style: GoogleFonts.kalam(
                   textStyle: TextStyle(
-                      color: Theme.of(context).brightness == Brightness.light ? MyColors.darkGreen: Colors.white,
+                      color: Theme.of(context).brightness == Brightness.light
+                          ? MyColors.darkGreen
+                          : Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.bold),
                 )),
@@ -303,8 +434,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 const SizedBox(
                   height: 10,
                 ),
-                const SizedBox(height: 10,),
-
+                const SizedBox(
+                  height: 10,
+                ),
                 TextFormField(
                   controller: emailController,
                   validator: (value) {
@@ -320,8 +452,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   cursorColor: MyColors.darkGreen,
                   decoration: InputDecoration(
                     hintText: FirebaseAuth.instance.currentUser!.email ?? 'Email',
-                    contentPadding: const EdgeInsets.symmetric(
-                        vertical: 15.0, horizontal: 20.0),
+                    contentPadding:
+                    const EdgeInsets.symmetric(vertical: 15.0, horizontal: 20.0),
                     filled: true,
                     fillColor: Colors.green.withOpacity(0.6),
                     border: OutlineInputBorder(
@@ -346,76 +478,79 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         });
   }
 
-  editPasswordDialog(){
+  editPasswordDialog() {
     newPassword = newPasswordController.text;
-      return showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return StatefulBuilder(
-              builder: (context,setState) {
-                return AlertDialog(
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)
+    return showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return StatefulBuilder(builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30)),
+              title: Text("Change Password",
+                  style: GoogleFonts.kalam(
+                    textStyle: TextStyle(
+                        color: Theme.of(context).brightness == Brightness.light
+                            ? MyColors.darkGreen
+                            : Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold),
+                  )),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: newPasswordController,
+                    obscureText: passToggle,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Please enter Password";
+                      } else if (value.length < 6) {
+                        return "Please enter at least 6 digit";
+                      }
+                      return null;
+                    },
+                    cursorColor: MyColors.darkGreen,
+                    decoration: InputDecoration(
+                        hintText: "Change Password",
+                        contentPadding: const EdgeInsets.symmetric(
+                            vertical: 15.0, horizontal: 20.0),
+                        filled: true,
+                        fillColor: Colors.green.withOpacity(0.6),
+                        border: OutlineInputBorder(
+                            borderSide: const BorderSide(color: MyColors.green),
+                            borderRadius: BorderRadius.circular(10)),
+                        focusedBorder: OutlineInputBorder(
+                            borderSide: const BorderSide(color: MyColors.green),
+                            borderRadius: BorderRadius.circular(10)),
+                        suffixIcon: InkWell(
+                          onTap: () {
+                            setState(() {
+                              passToggle = !passToggle;
+                            });
+                          },
+                          child: Icon(
+                            passToggle
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                            color: Theme.of(context).brightness == Brightness.light
+                                ? MyColors.darkGreen
+                                : Colors.white,
+                          ),
+                        )),
                   ),
-                  title: Text("Change Password",
-                      style: GoogleFonts.kalam(
-                        textStyle: TextStyle(
-                            color: Theme.of(context).brightness == Brightness.light ? MyColors.darkGreen: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold),
-                      )),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextFormField(
-                        controller: newPasswordController,
-                        obscureText: passToggle,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return "Please enter Password";
-                          } else if (value.length < 6) {
-                            return "Please enter at least 6 digit";
-                          }
-                          return null;
-                        },
-                        cursorColor: MyColors.darkGreen,
-                        decoration: InputDecoration(
-                          hintText:"Change Password",
-                          contentPadding: const EdgeInsets.symmetric(
-                              vertical: 15.0, horizontal: 20.0),
-                          filled: true,
-                          fillColor: Colors.green.withOpacity(0.6),
-                          border: OutlineInputBorder(
-                              borderSide: const BorderSide(color: MyColors.green),
-                              borderRadius: BorderRadius.circular(10)),
-                          focusedBorder: OutlineInputBorder(
-                              borderSide: const BorderSide(color: MyColors.green),
-                              borderRadius: BorderRadius.circular(10)),
-                            suffixIcon: InkWell(
-                              onTap: (){
-                                setState(() {
-                                  passToggle =! passToggle;
-                                });
-                              },
-                              child:Icon(
-                                passToggle ? Icons.visibility: Icons.visibility_off,color: Theme.of(context).brightness == Brightness.light ? MyColors.darkGreen: Colors.white,
-                              ),
-                            )
-                        ),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    MaterialButton(
-                      child: const Text('Change Password'),
-                      onPressed: (){
-                       changePassword();
-                      },
-                    ),
-                  ],
-                );
-              }
+                ],
+              ),
+              actions: [
+                MaterialButton(
+                  child: const Text('Change Password'),
+                  onPressed: () {
+                    changePassword();
+                  },
+                ),
+              ],
             );
           });
+        });
   }
 }
