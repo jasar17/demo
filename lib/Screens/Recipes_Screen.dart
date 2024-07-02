@@ -29,7 +29,7 @@ class _RecipeScreenState extends State<RecipeScreen>
       FirebaseFirestore.instance
           .collection("addMealData")
           .where('current_id', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
-          .orderBy('create_time', descending: true)
+          // .orderBy('create_time', descending: true)
           .snapshots();
   CollectionReference addnewmeal =
       FirebaseFirestore.instance.collection('addMealData');
@@ -49,7 +49,7 @@ class _RecipeScreenState extends State<RecipeScreen>
   ));
   final mealNameController = TextEditingController();
   final categoryController = TextEditingController();
-  // final CalendarController _calendarController = CalendarController();
+  
   @override
   void initState() {
     repeatOnce();
@@ -108,12 +108,10 @@ class _RecipeScreenState extends State<RecipeScreen>
               style: GoogleFonts.anekOdia(
                   textStyle: TextStyle(
                       color: Theme.of(context).brightness == Brightness.light ? MyColors.darkGreen : Colors.white,
-
                       fontSize: 28,
                       fontWeight: FontWeight.bold))),
         ),
         centerTitle: true,
-        // toolbarHeight: 100,
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           stream: mealStream,
@@ -173,11 +171,11 @@ class _RecipeScreenState extends State<RecipeScreen>
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10.0),
                         decoration: BoxDecoration(
-                            color:Theme.of(context).brightness == Brightness.light ? Colors.white: Colors.black,
+                            color: Theme.of(context).brightness == Brightness.light ? Colors.white: Colors.black,
                             borderRadius: BorderRadius.circular(20)),
                         child: TableCalendar(
-                          firstDay: DateTime.now(),
-                          lastDay: DateTime(2024),
+                          firstDay: DateTime.utc(2000, 1, 1),
+                          lastDay: DateTime.utc(2030, 12, 31),
                           focusedDay: _focusDay,
                           availableCalendarFormats: const {
                             CalendarFormat.week: 'Week',
@@ -193,14 +191,9 @@ class _RecipeScreenState extends State<RecipeScreen>
                               titleCentered: true,
                               formatButtonVisible: false,
                               titleTextStyle: TextStyle(
-                                  color: Theme.of(context).brightness == Brightness.light ? MyColors.darkGreen :Colors.white,
+                                  color: Theme.of(context).brightness == Brightness.light ? MyColors.darkGreen : Colors.white,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 18),
-                            // leftChevronIcon: Container(
-                            //   padding: EdgeInsets.all(4),
-                            //     decoration: BoxDecoration(color: Colors.amber,shape: BoxShape.circle),
-                            //     child: Icon(Icons.arrow_back)), // Customize the previous button
-                            // rightChevronIcon: Icon(Icons.arrow_forward),
                           ),
                           calendarBuilders: CalendarBuilders(
                               dowBuilder: (context, dayOfWeek) {
@@ -226,9 +219,6 @@ class _RecipeScreenState extends State<RecipeScreen>
                             );
                           }),
                           calendarStyle: CalendarStyle(
-                              // rowDecoration: BoxDecoration(
-                              //     color: Colors.white
-                              // ),
                               defaultDecoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(10),
                                 color: Colors.white60,
@@ -269,164 +259,144 @@ class _RecipeScreenState extends State<RecipeScreen>
                             child: Center(
                               child: Text(
                                 "Meal not added yet",
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                               ),
                             ),
                           );
                         }
+                        return ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: meals.length,
+                          itemBuilder: (context, index) {
+                            Map<String, dynamic> mealData = meals[index].data()!;
+                            print('Meal Data: $mealData');
 
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: SlideTransition(
-                            position: _listAnimation,
-                            child: ListView.builder(
-                              reverse: true,
-                              shrinkWrap: true,
-                              itemCount: snapshot.data!.docs.length,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemBuilder: (context, index) {
-                                String d = dateFormat.format(_focusDay);
-                                String firebaseDate = snapshot.data!.docs[index].get("create_time")?.toString() ?? "";
-                                print("Data  $firebaseDate");
-
-                                return d == snapshot.data!.docs[index].get("create_time").toString()
-                                    ? Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                                  child: Card(
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(20),
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            Theme.of(context).brightness == Brightness.light ? const Color(0xFFacd8a7).withOpacity(0.4) : Colors.black45,
-                                            Theme.of(context).brightness == Brightness.light ? const Color(0xFFacd8a7).withOpacity(0.4) : Colors.black45,
-                                            Theme.of(context).brightness == Brightness.light ? Colors.green.shade300 : Colors.black54,
-                                          ],
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                        ),
-                                      ),
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Padding(
-                                                padding: const EdgeInsets.only(left: 9.0, top: 5),
-                                                child: Row(
-                                                  children: [
-
-                                                    Text(
-                                                      "${snapshot.data!.docs[index].get("category")}",
-                                                      style: GoogleFonts.amiri(
-                                                        textStyle: TextStyle(
-                                                          color: Theme.of(context).brightness == Brightness.light ? MyColors.darkGreen : Colors.white,
-                                                          fontSize: 20,
-                                                          fontWeight: FontWeight.bold,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 5),
-                                                  ],
-                                                ),
-                                              ),
-                                              Padding(
-                                                padding: const EdgeInsets.only(top: 8.0, right: 5),
-                                                child: Row(
-                                                  children: [
-                                                    InkWell(
-                                                      onTap: () {
-                                                        openDialogBox(
-                                                          id: snapshot.data!.docs[index].id,
-                                                          category: snapshot.data!.docs[index].get("category"),
-                                                          mealName: snapshot.data!.docs[index].get("meal_name"),
-                                                        );
-                                                      },
-                                                      child: Image.asset(
-                                                        "assets/edit.png",
-                                                        height: 35,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 7),
-                                                    InkWell(
-                                                      onTap: () {
-                                                        deleteDialogBox(snapshot.data!.docs[index].id);
-                                                      },
-                                                      child: Image.asset(
-                                                        "assets/bin.png",
-                                                        height: 35,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 5),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(8.0),
-                                            child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Row(
-                                                  children: [
-                                                    Container(
-                                                      height: 65,
-                                                      width: 65,
-                                                      decoration: BoxDecoration(
-                                                        color: Color(Random().nextInt(0xffffffff)).withAlpha(0xff).withOpacity(.4),
-                                                        borderRadius: BorderRadius.circular(20),
-                                                      ),
-                                                      child: Padding(
-                                                        padding: const EdgeInsets.all(12.0),
-                                                        child: snapshot.data!.docs[index].get("category") == "Breakfast"
-                                                            ? Image.asset('assets/breakfast.png')
-                                                            : snapshot.data!.docs[index].get("category") == "Lunch"
-                                                            ? Image.asset("assets/forlunch.png")
-                                                            : snapshot.data!.docs[index].get("category") == "Dinner"
-                                                            ? Image.asset("assets/fordinner.png")
-                                                            : snapshot.data!.docs[index].get("category") == "Dessert"
-                                                            ? Image.asset("assets/fordessert.png")
-                                                            : snapshot.data!.docs[index].get("category") == "Snacks"
-                                                            ? Image.asset("assets/Anything.png")
-                                                            : Image.asset("assets/forsnacks.png"),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 10),
-                                                    Text(
-                                                      "Meal : ${snapshot.data!.docs[index].get("meal_name")}",
-                                                      style: GoogleFonts.amiri(
-                                                        textStyle: TextStyle(
-                                                          color: Theme.of(context).brightness == Brightness.light ? MyColors.darkGreen : Colors.white,
-                                                          fontSize: 16,
-                                                          fontWeight: FontWeight.bold,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                IconButton(
-                                                  onPressed: () {},
-                                                  icon: Image.asset(
-                                                    "assets/arrow-right.png",
-                                                    height: 20,
-                                                    color: Theme.of(context).brightness == Brightness.light ? MyColors.darkGreen : Colors.white,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          const SizedBox(height: 10),
-                                        ],
-                                      ),
+                            return Dismissible(
+                              key: UniqueKey(),
+                              background: Container(
+                                decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(20)),
+                                padding: const EdgeInsets.only(left: 28.0),
+                                alignment: AlignmentDirectional.centerStart,
+                                child: const Icon(
+                                  Icons.delete,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              direction: DismissDirection.startToEnd,
+                              onDismissed: (direction) async {
+                                await FirebaseFirestore.instance.runTransaction(
+                                    (Transaction myTransaction) async {
+                                  await myTransaction.delete(
+                                      snapshot.data!.docs[index].reference);
+                                });
+                              },
+                              child: Container(
+                                height: 110,
+                                margin: const EdgeInsets.only(
+                                    bottom: 10, left: 10, right: 10),
+                                decoration: BoxDecoration(
+                                    color: Theme.of(context).brightness == Brightness.light ? Colors.white: Colors.black,
+                                    borderRadius: BorderRadius.circular(20)),
+                                child: ListTile(
+                                  leading: ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Image.asset(
+                                      'assets/images/${Random().nextInt(5) + 1}.jpg',
+                                      height: 50,
+                                      width: 50,
+                                      fit: BoxFit.cover,
                                     ),
                                   ),
-                                ) : const SizedBox();
-                              },
-                            ),
-                          ),
+                                  title: Text(mealData['meal_name'] ?? "",
+                                      style: GoogleFonts.abhayaLibre(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16)),
+                                  subtitle: Text(mealData['category'] ?? ""),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit),
+                                        onPressed: () {
+                                          mealNameController.text =
+                                              mealData['meal_name'] ?? "";
+                                          categoryController.text =
+                                              mealData['category'] ?? "";
+
+                                          showDialog(
+                                              context: context,
+                                              builder: (context) {
+                                                return AlertDialog(
+                                                  backgroundColor: Theme.of(context).brightness == Brightness.light ? Colors.green.shade100 : Colors.black,
+                                                  content: Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      TextField(
+                                                        controller:
+                                                            mealNameController,
+                                                        decoration:
+                                                            const InputDecoration(
+                                                                labelText:
+                                                                    'Meal Name'),
+                                                      ),
+                                                      TextField(
+                                                        controller:
+                                                            categoryController,
+                                                        decoration:
+                                                            const InputDecoration(
+                                                                labelText:
+                                                                    'Category'),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  actions: [
+                                                    TextButton(
+                                                        onPressed: () {
+                                                          Navigator.pop(
+                                                              context);
+                                                        },
+                                                        child: const Text(
+                                                            'Cancel')),
+                                                    TextButton(
+                                                        onPressed: () async {
+                                                          updateMeal(meals[index].id);
+                                                          setState(() {
+                                                            isLoading = true;
+                                                          });
+                                                          Future.delayed(const Duration(seconds: 3), () {
+                                                            if(mounted){
+                                                              setState(() {
+                                                                isLoading = false;
+                                                              });
+                                                            }
+                                                          });
+                                                        },
+                                                        child: const Text(
+                                                            'Update'))
+                                                  ],
+                                                );
+                                              });
+                                        },
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete),
+                                        onPressed: () async {
+                                          await FirebaseFirestore.instance.runTransaction(
+                                              (Transaction myTransaction) async {
+                                            await myTransaction.delete(snapshot.data!.docs[index].reference);
+                                          });
+                                        },
+                                      )
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         );
                       },
                     ),
@@ -435,143 +405,14 @@ class _RecipeScreenState extends State<RecipeScreen>
               );
             }
           }),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.all(6.0),
-        child: FloatingActionButton.extended(
-          elevation: 10,
-          onPressed: () {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (context) => const AddMealScreen()));
-          },
-          backgroundColor: MyColors.darkGreen,
-          label: const Icon(
-            Icons.add,
-            size: 27,
-          ),
-        ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+              context, MaterialPageRoute(builder: (context) => AddMealScreen()));
+        },
+        backgroundColor: Theme.of(context).brightness == Brightness.light ? MyColors.darkGreen: Colors.green.shade50,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
-  }
-
-  Widget textStryle(String data) {
-    return Text(data,
-        style: GoogleFonts.kalam(
-          textStyle: const TextStyle(
-              color: MyColors.darkGreen,
-              fontSize: 18,
-              fontWeight: FontWeight.bold),
-        ));
-  }
-
-  openDialogBox({id, category, mealName}) {
-    mealNameController.text = mealName;
-    return showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text("Update Meal",
-                style: GoogleFonts.kalam(
-                  textStyle: const TextStyle(
-                      color: MyColors.darkGreen,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold),
-                )),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text("Category: $category",
-                    style: GoogleFonts.kalam(
-                      textStyle: const TextStyle(
-                          color: MyColors.darkGreen,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold),
-                    )),
-                const SizedBox(
-                  height: 20,
-                ),
-                TextFormField(
-                  controller: mealNameController,
-                  cursorColor: MyColors.darkGreen,
-                  decoration: InputDecoration(
-                    hintText: "Enter Meal",
-                    contentPadding: const EdgeInsets.symmetric(
-                        vertical: 15.0, horizontal: 20.0),
-                    filled: true,
-                    fillColor: Colors.green.withOpacity(0.6),
-                    border: OutlineInputBorder(
-                        borderSide: const BorderSide(color: MyColors.green),
-                        borderRadius: BorderRadius.circular(10)),
-                    focusedBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(color: MyColors.green),
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              MaterialButton(
-                child: const Text('Update'),
-                onPressed: () {
-                  updateMeal(id);
-                },
-              ),
-            ],
-          );
-        });
-  }
-
-  deleteDialogBox(String id) {
-    return showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Center(
-              child: Text("Are you sure you want to delete?",
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.kalam(
-                    textStyle: TextStyle(
-                        color: Theme.of(context).brightness == Brightness.light ? MyColors.darkGreen :Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold),
-                  )),
-            ),
-            actions: [
-              TextButton(
-                  style: ButtonStyle(
-                    shape: MaterialStateProperty.all(RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10))),
-                    backgroundColor:
-                        MaterialStateProperty.all(Colors.green.shade100),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: const Text(
-                    "Cancel",
-                    style: TextStyle(
-                        color: Colors.black45, fontWeight: FontWeight.bold),
-                  )),
-              TextButton(
-                  style: ButtonStyle(
-                    shape: MaterialStateProperty.all(RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10))),
-                    backgroundColor:
-                        MaterialStateProperty.all(Colors.green.shade100),
-                  ),
-                  onPressed: () {
-                    FirebaseFirestore.instance
-                        .collection("addMealData")
-                        .doc(id)
-                        .delete()
-                        .then((value) => Navigator.pop(context));
-                  },
-                  child: const Text(
-                    "Yes",
-                    style: TextStyle(
-                        color: Colors.black45, fontWeight: FontWeight.bold),
-                  )),
-            ],
-          );
-        });
   }
 }
